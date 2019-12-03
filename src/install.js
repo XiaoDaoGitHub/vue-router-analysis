@@ -3,8 +3,11 @@ import Link from './components/link'
 
 export let _Vue
 
+// Vue.install会传入Vue对象
 export function install (Vue) {
+  // 是否已经安装过vue-router,全局值安装一次
   if (install.installed && _Vue === Vue) return
+  // 标记installed为true，这里是一个简单的单例模式的实现
   install.installed = true
 
   _Vue = Vue
@@ -34,15 +37,16 @@ export function install (Vue) {
       registerInstance(this)
     }
   })
-
+  // 在vue原型上挂在$router方法
   Object.defineProperty(Vue.prototype, '$router', {
+    // 返回内部变量 _routerRoot._router
     get () { return this._routerRoot._router }
   })
-
+// 在vue原型上挂在$route方法
   Object.defineProperty(Vue.prototype, '$route', {
     get () { return this._routerRoot._route }
   })
-
+  // 注册组件router-view和router-link
   Vue.component('RouterView', View)
   Vue.component('RouterLink', Link)
 

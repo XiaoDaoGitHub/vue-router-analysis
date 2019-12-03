@@ -20,13 +20,15 @@ export function createRouteMap (
   const pathMap: Dictionary<RouteRecord> = oldPathMap || Object.create(null)
   // $flow-disable-line
   const nameMap: Dictionary<RouteRecord> = oldNameMap || Object.create(null)
-
+  // 递归遍历routes，把每一个路由都添加到pathList,pathMap，nameMap中去
   routes.forEach(route => {
     addRouteRecord(pathList, pathMap, nameMap, route)
   })
 
   // ensure wildcard routes are always at the end
+  // 循环遍历所有path
   for (let i = 0, l = pathList.length; i < l; i++) {
+    // *代表所有，应该是最后匹配项，所以放到数组末尾
     if (pathList[i] === '*') {
       pathList.push(pathList.splice(i, 1)[0])
       l--
@@ -61,6 +63,7 @@ function addRouteRecord (
   parent?: RouteRecord,
   matchAs?: string
 ) {
+  // 获取每一个路由的path和name
   const { path, name } = route
   if (process.env.NODE_ENV !== 'production') {
     assert(path != null, `"path" is required in a route configuration.`)
@@ -74,14 +77,18 @@ function addRouteRecord (
 
   const pathToRegexpOptions: PathToRegexpOptions =
     route.pathToRegexpOptions || {}
+  // 对path做规范化处理
   const normalizedPath = normalizePath(path, parent, pathToRegexpOptions.strict)
-
+  // 匹配规则是否大小写铭感
   if (typeof route.caseSensitive === 'boolean') {
+    // 把规则统一到pathToRegexpOptions上面
     pathToRegexpOptions.sensitive = route.caseSensitive
   }
 
   const record: RouteRecord = {
     path: normalizedPath,
+    // 把path转换为这则表达式
+    // 可以参照https://github.com/pillarjs/path-to-regexp
     regex: compileRouteRegex(normalizedPath, pathToRegexpOptions),
     components: route.components || { default: route.component },
     instances: {},
@@ -98,7 +105,7 @@ function addRouteRecord (
           ? route.props
           : { default: route.props }
   }
-
+  // route含有子节点
   if (route.children) {
     // Warn if route is named, does not redirect and has a default child route.
     // If users navigate to this route by name, the default child will
@@ -121,6 +128,7 @@ function addRouteRecord (
         )
       }
     }
+    // 对子节点递归调用addRouteRecord方法
     route.children.forEach(child => {
       const childMatchAs = matchAs
         ? cleanPath(`${matchAs}/${child.path}`)
@@ -128,16 +136,21 @@ function addRouteRecord (
       addRouteRecord(pathList, pathMap, nameMap, child, record, childMatchAs)
     })
   }
-
+  // 没有添加过path
   if (!pathMap[record.path]) {
+    // pathList添加这个path
     pathList.push(record.path)
+    // pathMap也添加一个，避免数组查找性能损耗
     pathMap[record.path] = record
   }
 
   if (route.alias !== undefined) {
+    // alias可以是数组
     const aliases = Array.isArray(route.alias) ? route.alias : [route.alias]
     for (let i = 0; i < aliases.length; ++i) {
+      // 获取每一个别名
       const alias = aliases[i]
+      // 别名不能和path重名
       if (process.env.NODE_ENV !== 'production' && alias === path) {
         warn(
           false,
@@ -151,6 +164,7 @@ function addRouteRecord (
         path: alias,
         children: route.children
       }
+      // 别名也作为route添加到pathList以及pathMap中去
       addRouteRecord(
         pathList,
         pathMap,
@@ -161,7 +175,7 @@ function addRouteRecord (
       )
     }
   }
-
+  // 如果有name属性，添加到nameMap中
   if (name) {
     if (!nameMap[name]) {
       nameMap[name] = record
@@ -179,6 +193,7 @@ function compileRouteRegex (
   path: string,
   pathToRegexpOptions: PathToRegexpOptions
 ): RouteRegExp {
+  // 把path转换为正则表达式
   const regex = Regexp(path, [], pathToRegexpOptions)
   if (process.env.NODE_ENV !== 'production') {
     const keys: any = Object.create(null)
@@ -193,13 +208,17 @@ function compileRouteRegex (
   return regex
 }
 
+// 格式化path
 function normalizePath (
   path: string,
   parent?: RouteRecord,
   strict?: boolean
 ): string {
+  // 非严格模式除去结尾的/
   if (!strict) path = path.replace(/\/$/, '')
+  // 第一个是/ ，直接返回path，当做是绝对路径
   if (path[0] === '/') return path
   if (parent == null) return path
+  // 有parent，则把parent和path做拼接
   return cleanPath(`${parent.path}/${path}`)
 }
