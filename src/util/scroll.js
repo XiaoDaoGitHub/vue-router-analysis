@@ -12,11 +12,19 @@ export function setupScroll () {
   // Fix for #2774 Support for apps loaded from Windows file shares not mapped to network drives: replaced location.origin with
   // window.location.protocol + '//' + window.location.host
   // location.host contains the port and location.hostname doesn't
+  // window.location.protocol是获取网站的基础协议如http、https
+  // window.location.host 是单纯的网址，不包含hash之类的参数
   const protocolAndPath = window.location.protocol + '//' + window.location.host
+  // window.location.href是整个网址
+  // 替换之后获取到的就是网址的参数和hash等
   const absolutePath = window.location.href.replace(protocolAndPath, '')
   window.history.replaceState({ key: getStateKey() }, '', absolutePath)
+  // popstate是浏览器后退时触发，replaceState和pushState无法触发
   window.addEventListener('popstate', e => {
+    // 存储当前页面的水平、垂直偏移
     saveScrollPosition()
+
+    // 如果有state.key，存储为当前的key
     if (e.state && e.state.key) {
       setStateKey(e.state.key)
     }
@@ -73,8 +81,10 @@ export function handleScroll (
 }
 
 export function saveScrollPosition () {
+  // 根据当前时间生成一个key
   const key = getStateKey()
   if (key) {
+    // 根据key存储当前页面的水平、垂直偏移
     positionStore[key] = {
       x: window.pageXOffset,
       y: window.pageYOffset

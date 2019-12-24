@@ -35,6 +35,7 @@ export class History {
     this.router = router
     this.base = normalizeBase(base)
     // start with a route object that stands for "nowhere"
+    // START是初始化的一个route对象
     this.current = START
     this.pending = null
     this.ready = false
@@ -67,6 +68,7 @@ export class History {
     onComplete?: Function,
     onAbort?: Function
   ) {
+    // match会返回一个新创建的route对象
     const route = this.router.match(location, this.current)
     this.confirmTransition(
       route,
@@ -98,6 +100,7 @@ export class History {
   }
 
   confirmTransition (route: Route, onComplete: Function, onAbort?: Function) {
+    // 获取当前的路由实例
     const current = this.current
     const abort = err => {
       // after merging https://github.com/vuejs/vue-router/pull/2771 we
@@ -116,6 +119,7 @@ export class History {
       }
       onAbort && onAbort(err)
     }
+    // 是否是相同的路由
     if (
       isSameRoute(route, current) &&
       // in the case the route map has been dynamically appended to
@@ -124,32 +128,40 @@ export class History {
       this.ensureURL()
       return abort(new NavigationDuplicated(route))
     }
-
+    // 获取前后两次路由的路径区别
     const { updated, deactivated, activated } = resolveQueue(
       this.current.matched,
       route.matched
     )
-
+    // 定义路由钩子函数
     const queue: Array<?NavigationGuard> = [].concat(
       // in-component leave guards
+      // router leave钩子
       extractLeaveGuards(deactivated),
       // global before hooks
+      // 全局的before钩子
       this.router.beforeHooks,
       // in-component update hooks
+      // update钩子
       extractUpdateHooks(updated),
       // in-config enter guards
+      // befeore enter钩子
       activated.map(m => m.beforeEnter),
       // async components
+      // 返回加载异步组件的函数
       resolveAsyncComponents(activated)
     )
 
     this.pending = route
+    // 接受钩子函数和next函数
     const iterator = (hook: NavigationGuard, next) => {
       if (this.pending !== route) {
         return abort()
       }
       try {
+        // 调用路由守卫，传入to，from，以及next函数
         hook(route, current, (to: any) => {
+          // to为false，直接结束
           if (to === false || isError(to)) {
             // next(false) -> abort navigation, ensure current URL
             this.ensureURL(true)
@@ -168,6 +180,7 @@ export class History {
             }
           } else {
             // confirm transition and pass on the value
+            // 直接调用next
             next(to)
           }
         })
@@ -177,6 +190,7 @@ export class History {
     }
 
     runQueue(queue, iterator, () => {
+      // 钩子调用完成执行的回调函数
       const postEnterCbs = []
       const isValid = () => this.current === route
       // wait until async components are resolved before
@@ -229,7 +243,7 @@ function normalizeBase (base: ?string): string {
   // remove trailing slash
   return base.replace(/\/$/, '')
 }
-
+// 获取前后两次路由的路径区别
 function resolveQueue (
   current: Array<RouteRecord>,
   next: Array<RouteRecord>
@@ -239,15 +253,20 @@ function resolveQueue (
   deactivated: Array<RouteRecord>
 } {
   let i
+  // 获取current和next路由最长的一项
   const max = Math.max(current.length, next.length)
   for (i = 0; i < max; i++) {
+    // 对比当前的路由和下一个路由是否有匹配项
     if (current[i] !== next[i]) {
       break
     }
   }
   return {
+    // 两个路由都相同的部分
     updated: next.slice(0, i),
+    // 新路由不同的部分
     activated: next.slice(i),
+    // 旧路由不同的部分
     deactivated: current.slice(i)
   }
 }
@@ -258,10 +277,14 @@ function extractGuards (
   bind: Function,
   reverse?: boolean
 ): Array<?Function> {
+  // def是路由组件
   const guards = flatMapComponents(records, (def, instance, match, key) => {
+    // 获取路由钩子函数
     const guard = extractGuard(def, name)
     if (guard) {
+      // 钩子函数是数组
       return Array.isArray(guard)
+      // 对每一个钩子执行bind
         ? guard.map(guard => bind(guard, instance, match, key))
         : bind(guard, instance, match, key)
     }
@@ -273,18 +296,23 @@ function extractGuard (
   def: Object | Function,
   key: string
 ): NavigationGuard | Array<NavigationGuard> {
+  // def不是函数的话，就是一个同步组件，调用vue.extend注册为组件
   if (typeof def !== 'function') {
     // extend now so that global mixins are applied.
     def = _Vue.extend(def)
   }
+  // 返回该组件定义的对应key的路由钩子函数
   return def.options[key]
 }
 
 function extractLeaveGuards (deactivated: Array<RouteRecord>): Array<?Function> {
+  // 对每一个经过deactivated的路由实例都返回bind的beforeRouteLeave函数
+  // true表示路由从子到父执行
   return extractGuards(deactivated, 'beforeRouteLeave', bindGuard, true)
 }
 
 function extractUpdateHooks (updated: Array<RouteRecord>): Array<?Function> {
+  // 对每一个路由组件都返回beforeRouteUpdate的bind函数
   return extractGuards(updated, 'beforeRouteUpdate', bindGuard)
 }
 

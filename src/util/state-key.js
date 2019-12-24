@@ -7,6 +7,7 @@ const Time =
     ? window.performance
     : Date
 
+// 根据当前时间生成一个key
 export function genStateKey (): string {
   return Time.now().toFixed(3)
 }

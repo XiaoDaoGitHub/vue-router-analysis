@@ -39,13 +39,17 @@ export default class VueRouter {
     this.beforeHooks = []
     this.resolveHooks = []
     this.afterHooks = []
+    // 返回match和addRoutes方法，内部会递归遍历routes拍平为一维数据以及map结构
     this.matcher = createMatcher(options.routes || [], this)
     // 没有显示设置router模式，默认是hash router
     let mode = options.mode || 'hash'
+    // 当mode是history时，判断浏览器是否支持pushState
     this.fallback = mode === 'history' && !supportsPushState && options.fallback !== false
+    // 当mode是history且浏览器不支持pushState的时候，回退到hash模式
     if (this.fallback) {
       mode = 'hash'
     }
+    // 不是浏览器的话(node.js)，则默认使用abstract模式
     if (!inBrowser) {
       mode = 'abstract'
     }
@@ -53,6 +57,7 @@ export default class VueRouter {
 
     switch (mode) {
       case 'history':
+        // options.base是项目的基础路径，默认是/
         this.history = new HTML5History(this, options.base)
         break
       case 'hash':
@@ -86,11 +91,11 @@ export default class VueRouter {
       `not installed. Make sure to call \`Vue.use(VueRouter)\` ` +
       `before creating root instance.`
     )
-
+    
     this.apps.push(app)
-
     // set up app destroyed handler
     // https://github.com/vuejs/vue-router/issues/2639
+    // 设置vue组件销毁的钩子函数
     app.$once('hook:destroyed', () => {
       // clean out app from this.apps array once destroyed
       const index = this.apps.indexOf(app)
@@ -99,19 +104,20 @@ export default class VueRouter {
       // we do not release the router so it can be reused
       if (this.app === app) this.app = this.apps[0] || null
     })
-
     // main app previously initialized
     // return as we don't need to set up new history listener
+    // 每个组件只执行一次初始化
     if (this.app) {
       return
-    }
+    } 
 
     this.app = app
-
+    // 获取到路由对象
     const history = this.history
-
+    // html5路由
     if (history instanceof HTML5History) {
       history.transitionTo(history.getCurrentLocation())
+    // hash路由
     } else if (history instanceof HashHistory) {
       const setupHashListener = () => {
         history.setupListeners()
@@ -152,10 +158,12 @@ export default class VueRouter {
 
   push (location: RawLocation, onComplete?: Function, onAbort?: Function) {
     // $flow-disable-line
+    // 没有传入onComplete和onAbort，且支持promise，返回promise对象
     if (!onComplete && !onAbort && typeof Promise !== 'undefined') {
       return new Promise((resolve, reject) => {
         this.history.push(location, resolve, reject)
       })
+    // 否则直接调用base的push方法
     } else {
       this.history.push(location, onComplete, onAbort)
     }

@@ -15,13 +15,15 @@ export function fillParams (
 ): string {
   params = params || {}
   try {
+    // 对动态path转换为函数
     const filler =
       regexpCompileCache[path] ||
       (regexpCompileCache[path] = Regexp.compile(path))
 
     // Fix #2505 resolving asterisk routes { name: 'not-found', params: { pathMatch: '/not-found' }}
+    // pathMatch表示路径中通配符匹配的部分
     if (params.pathMatch) params[0] = params.pathMatch
-
+    // 对path更具参数进行填充
     return filler(params, { pretty: true })
   } catch (e) {
     if (process.env.NODE_ENV !== 'production') {

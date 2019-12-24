@@ -12,12 +12,12 @@ export function createRoute (
   router?: VueRouter
 ): Route {
   const stringifyQuery = router && router.options.stringifyQuery
-
+  // 获取到queryString
   let query: any = location.query || {}
   try {
     query = clone(query)
   } catch (e) {}
-
+  // 构建route对象
   const route: Route = {
     name: location.name || (record && record.name),
     meta: (record && record.meta) || {},
@@ -26,11 +26,13 @@ export function createRoute (
     query,
     params: location.params || {},
     fullPath: getFullPath(location, stringifyQuery),
+    // matched是一个嵌套组件所有父子路由recored组成的数组
     matched: record ? formatMatch(record) : []
   }
   if (redirectedFrom) {
     route.redirectedFrom = getFullPath(redirectedFrom, stringifyQuery)
   }
+  // 冻结route对象
   return Object.freeze(route)
 }
 
@@ -71,21 +73,32 @@ function getFullPath (
 }
 
 export function isSameRoute (a: Route, b: ?Route): boolean {
+  // b为开始route
   if (b === START) {
     return a === b
+    // 没有传入b，直接返回false
   } else if (!b) {
     return false
+  // a和b都有path属性
   } else if (a.path && b.path) {
     return (
+      // 移除末尾的/
       a.path.replace(trailingSlashRE, '') === b.path.replace(trailingSlashRE, '') &&
+      // 判断hash是否相等
       a.hash === b.hash &&
+      // 判断两个querystring是否相等
       isObjectEqual(a.query, b.query)
     )
+  // a和b都有name属性
   } else if (a.name && b.name) {
     return (
+      // name是否相等
       a.name === b.name &&
+      // hash是否相等
       a.hash === b.hash &&
+      // query是否相等
       isObjectEqual(a.query, b.query) &&
+      // params是否相等
       isObjectEqual(a.params, b.params)
     )
   } else {
