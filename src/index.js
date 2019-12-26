@@ -221,15 +221,20 @@ export default class VueRouter {
     resolved: Route
   } {
     current = current || this.history.current
+    // 根据跳转和当前路由计算出路由路径
     const location = normalizeLocation(
       to,
       current,
       append,
       this
     )
+    // 根据计算的路径匹配路由对象
     const route = this.match(location, current)
+    // 是否配置了重定向路由
     const fullPath = route.redirectedFrom || route.fullPath
+    // 获取配置的路由基础路径
     const base = this.history.base
+    // 计算出完整的url
     const href = createHref(base, fullPath, this.mode)
     return {
       location,
